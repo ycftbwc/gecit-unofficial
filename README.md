@@ -55,53 +55,25 @@ Additionally, some ISPs poison DNS responses. gecit includes a built-in DoH (DNS
 One line — detects arch, verifies SHA256, installs to `/usr/local/bin`, sets up a systemd service, enables and starts it:
 
 ```bash
-curl -fsSL [https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh](https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh) | sudo bash
+curl -fsSL https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh | sudo bash
 ```
 
 Optional flags and env vars:
 
 ```bash
-# Pin a specific version
-curl -fsSL [https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh](https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh) | sudo VERSION=v0.1.4 bash
 
 # Install but don't start the service
-curl -fsSL [https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh](https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh) | sudo bash -s -- --no-start
+curl -fsSL https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh | sudo bash -s -- --no-start
 
 # Uninstall (stops + disables service, runs gecit cleanup, removes binary and unit file)
-curl -fsSL [https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh](https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh) | sudo bash -s -- --uninstall
+curl -fsSL https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh | sudo bash -s -- --uninstall
 ```
 
 The installer requires Linux kernel 5.10+, systemd, and `amd64` or `arm64`. After installation, customize CLI flags (e.g. `--fake-ttl`, `--doh-upstream`) with `sudo systemctl edit gecit`.
 
 ### Pre-built binaries (manual)
 
-Download from [releases](https://github.com/ycftbwc/gecit-unofficial/releases):
-
-```bash
-# Linux (amd64)
-curl -L [https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-linux-amd64](https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-linux-amd64) -o gecit
-chmod +x gecit
-sudo ./gecit run
-
-# Linux (arm64)
-curl -L [https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-linux-arm64](https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-linux-arm64) -o gecit
-chmod +x gecit
-sudo ./gecit run
-
-# macOS (Apple Silicon)
-curl -L [https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-darwin-arm64](https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-darwin-arm64) -o gecit
-chmod +x gecit
-sudo ./gecit run
-
-# macOS (Intel)
-curl -L [https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-darwin-amd64](https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-darwin-amd64) -o gecit
-chmod +x gecit
-sudo ./gecit run
-
-# Windows (amd64) - requires Npcap (npcap.com)
-curl -L [https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-windows-amd64.exe](https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-windows-amd64.exe) -o gecit.exe
-gecit.exe run
-```
+Fork does not have pre built binaries right now.
 
 ### Building from source
 
@@ -110,7 +82,7 @@ Requires Go 1.24+. Linux builds need kernel 5.10+, clang, and llvm-strip for BPF
 *Note: The Linux Makefile targets are optimized with `-trimpath` and `-ldflags="-s -w"` to strip DWARF debugging tables and significantly reduce binary size.*
 
 ```bash
-git clone [https://github.com/ycftbwc/gecit-unofficial.git](https://github.com/ycftbwc/gecit-unofficial.git)
+git clone https://github.com/ycftbwc/gecit-unofficial.git](https://github.com/ycftbwc/gecit-unofficial.git
 cd gecit
 
 make gecit-linux-amd64    # Linux x86_64
@@ -140,7 +112,7 @@ If gecit crashes, run `sudo gecit cleanup` to restore system settings.
 sudo gecit run
 
 # Run in background with a low TTL and a privacy-respecting DoH provider
-sudo gecit run --fake-ttl 3 --doh-upstream [https://dns.quad9.net/dns-query](https://dns.quad9.net/dns-query) --detach
+sudo gecit run --fake-ttl 3 --doh-upstream https://dns.quad9.net/dns-query --detach
 
 # Disable built-in DoH (useful if you already use DNS over HTTPS)
 sudo gecit run --doh=false
