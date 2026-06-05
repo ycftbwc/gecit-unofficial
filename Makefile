@@ -29,10 +29,10 @@ bpf-clean:
 	       pkg/ebpf/bpf/sockops_bindings.go
 
 gecit-linux-amd64: bpf-all
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/gecit-linux-amd64 ./cmd/gecit
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -buildvcs=false -trimpath -ldflags="-s -w" -o bin/gecit-linux-amd64 ./cmd/gecit
 
 gecit-linux-arm64: bpf-all
-	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/gecit-linux-arm64 ./cmd/gecit
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -buildvcs=false -trimpath -ldflags="-s -w" -o bin/gecit-linux-arm64 ./cmd/gecit
 
 gecit-darwin-arm64:
 	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 CC="$(DARWIN_ARM64_CC)" \
