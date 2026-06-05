@@ -6,6 +6,7 @@ require (
 	github.com/boratanrikulu/bpfvet v0.2.1
 	github.com/boratanrikulu/gobee v0.0.0-20260504153610-1a66b6012aa6
 	github.com/cilium/ebpf v0.21.0
+	github.com/florianl/go-nfqueue/v2 v2.0.2
 	github.com/google/gopacket v1.1.19
 	github.com/miekg/dns v1.1.72
 	github.com/sagernet/sing v0.8.4
@@ -17,7 +18,6 @@ require (
 )
 
 require (
-	github.com/florianl/go-nfqueue/v2 v2.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect

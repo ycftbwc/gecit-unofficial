@@ -1,18 +1,15 @@
 #!/usr/bin/env bash
 #
-# gecit installer
+# gecit local compile & install script
 #
-# One-line install:
-#   curl -fsSL https://raw.githubusercontent.com/boratanrikulu/gecit/main/scripts/install.sh | sudo bash
-#
-# Pinned version:
-#   curl -fsSL .../install.sh | sudo VERSION=v0.1.4 bash
+# Install & Start:
+#   sudo ./scripts/install.sh
 #
 # Skip auto-start:
-#   curl -fsSL .../install.sh | sudo bash -s -- --no-start
+#   sudo ./scripts/install.sh --no-start
 #
 # Uninstall:
-#   curl -fsSL .../install.sh | sudo bash -s -- --uninstall
+#   sudo ./scripts/install.sh --uninstall
 
 set -euo pipefail
 
@@ -20,7 +17,6 @@ set -euo pipefail
 # Constants
 # ---------------------------------------------------------------------------
 
-REPO="boratanrikulu/gecit"
 PREFIX="${PREFIX:-/usr/local}"
 BIN_DIR="${PREFIX}/bin"
 BIN_PATH="${BIN_DIR}/gecit"
@@ -29,7 +25,7 @@ MIN_KERNEL_MAJOR=5
 MIN_KERNEL_MINOR=10
 
 # ---------------------------------------------------------------------------
-# Output helpers (ANSI only, matches scripts/demo.sh style)
+# Output helpers (ANSI only)
 # ---------------------------------------------------------------------------
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
@@ -51,11 +47,10 @@ err()  { printf "\n  ${RED}ERROR${NC} %s\n\n" "$*" >&2; exit 1; }
 
 usage() {
     cat <<'EOF'
-gecit installer
+gecit local installer
 
 Usage:
-  curl -fsSL https://raw.githubusercontent.com/boratanrikulu/gecit/main/scripts/install.sh | sudo bash
-  curl -fsSL .../install.sh | sudo bash -s -- [flags]
+  sudo ./scripts/install.sh [flags]
 
 Flags:
   --no-start       install but don't start the service
@@ -64,7 +59,6 @@ Flags:
   -h, --help       show this help
 
 Environment:
-  VERSION=vX.Y.Z   pin to a specific release (default: latest)
   PREFIX=/path     install root (default: /usr/local; binary at $PREFIX/bin/gecit)
   NO_COLOR=1       disable ANSI colors
 
@@ -96,8 +90,7 @@ done
 # ---------------------------------------------------------------------------
 
 if [ "$(id -u)" -ne 0 ]; then
-    err "Must run as root. Re-run with:
-    curl -fsSL https://raw.githubusercontent.com/${REPO}/main/scripts/install.sh | sudo bash"
+    err "Must run as root. Re-run with: sudo ./scripts/install.sh"
 fi
 
 # ---------------------------------------------------------------------------
@@ -138,34 +131,18 @@ detect_systemd() {
 
 require_tools() {
     local missing=()
-    for t in curl sha256sum install systemctl awk; do
+    for t in make go clang llvm-strip install systemctl awk; do
         command -v "$t" >/dev/null 2>&1 || missing+=("$t")
     done
     if [ "${#missing[@]}" -gt 0 ]; then
-        err "Missing required tools: ${missing[*]}"
+        err "Missing required build tools: ${missing[*]}"
     fi
 }
 
-# ---------------------------------------------------------------------------
-# Version resolution
-# ---------------------------------------------------------------------------
-
-resolve_version() {
-    if [ -n "${VERSION:-}" ]; then
-        info "Using pinned version: ${VERSION}"
-        return
+check_dir() {
+    if [ ! -f "Makefile" ] || [ ! -d "cmd/gecit" ]; then
+        err "Must run this script from the root of the gecit repository."
     fi
-    info "Resolving latest release from GitHub..."
-    local resp
-    if ! resp="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest")"; then
-        err "Could not reach GitHub API. Set VERSION=vX.Y.Z to pin manually."
-    fi
-    if [[ "$resp" =~ \"tag_name\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
-        VERSION="${BASH_REMATCH[1]}"
-    else
-        err "Could not parse release tag from GitHub response. Set VERSION=vX.Y.Z to pin manually."
-    fi
-    info "Latest release: ${VERSION}"
 }
 
 # ---------------------------------------------------------------------------
@@ -195,42 +172,15 @@ backup_existing() {
 }
 
 # ---------------------------------------------------------------------------
-# Download + verify
+# Compile
 # ---------------------------------------------------------------------------
 
-download_and_verify() {
-    TMPDIR="$(mktemp -d -t gecit-install.XXXXXX)"
-    trap 'rm -rf "$TMPDIR"' EXIT
-
-    local asset="gecit-${OS}-${ARCH}"
-    local bin_url="https://github.com/${REPO}/releases/download/${VERSION}/${asset}"
-    local sum_url="https://github.com/${REPO}/releases/download/${VERSION}/checksums.txt"
-
-    info "Downloading ${asset}..."
-    if ! curl -fsSL --proto '=https' --tlsv1.2 -o "${TMPDIR}/gecit" "$bin_url"; then
-        err "Failed to download ${bin_url}. Check that release ${VERSION} has a ${asset} asset."
+compile_binary() {
+    info "Compiling optimized gecit-${OS}-${ARCH} locally..."
+    if ! make "gecit-${OS}-${ARCH}"; then
+        err "Compilation failed. Check the output above for details."
     fi
-
-    info "Downloading checksums.txt..."
-    if ! curl -fsSL --proto '=https' --tlsv1.2 -o "${TMPDIR}/checksums.txt" "$sum_url"; then
-        err "Failed to download ${sum_url}."
-    fi
-
-    info "Verifying SHA256..."
-    local expected actual
-    # Upstream checksums.txt entries can be either "<sha>  <asset>" or
-    # "<sha>  <subdir>/<asset>". Match either form on the last field.
-    expected="$(awk -v f="$asset" '$NF == f || $NF ~ ("/"f"$") { print $1; exit }' "${TMPDIR}/checksums.txt")"
-    if [ -z "$expected" ]; then
-        err "No checksum entry for ${asset} in checksums.txt."
-    fi
-    actual="$(sha256sum "${TMPDIR}/gecit" | awk '{print $1}')"
-    if [ "$expected" != "$actual" ]; then
-        err "Checksum mismatch for ${asset}.
-    expected: ${expected}
-    actual:   ${actual}"
-    fi
-    ok "Checksum verified"
+    ok "Compilation verified"
 }
 
 # ---------------------------------------------------------------------------
@@ -239,7 +189,7 @@ download_and_verify() {
 
 install_binary() {
     install -d -m 0755 "$BIN_DIR"
-    install -m 0755 "${TMPDIR}/gecit" "$BIN_PATH"
+    install -m 0755 "./bin/gecit-${OS}-${ARCH}" "$BIN_PATH"
     ok "Installed binary at ${BIN_PATH}"
 }
 
@@ -247,7 +197,6 @@ write_unit() {
     cat > "$UNIT_PATH" <<EOF
 [Unit]
 Description=gecit DPI bypass (eBPF)
-Documentation=https://github.com/${REPO}
 After=network-online.target
 Wants=network-online.target
 
@@ -294,7 +243,7 @@ print_install_summary() {
     active="$(systemctl is-active gecit 2>/dev/null || true)"
     [ -z "$active" ] && active="not running"
     printf "\n"
-    printf "  %sgecit %s installed%s\n" "$BOLD" "$VERSION" "$NC"
+    printf "  %sgecit (local build) installed%s\n" "$BOLD" "$NC"
     printf "  ----------------------------------------\n"
     printf "  binary:   %s\n" "$BIN_PATH"
     printf "  unit:     %s\n" "$UNIT_PATH"
@@ -310,7 +259,7 @@ print_install_summary() {
     printf "    sudo systemctl edit gecit\n"
     printf "\n"
     printf "  %sUninstall%s\n" "$BOLD" "$NC"
-    printf "    curl -fsSL https://raw.githubusercontent.com/%s/main/scripts/install.sh | sudo bash -s -- --uninstall\n" "$REPO"
+    printf "    sudo ./scripts/install.sh --uninstall\n"
     printf "\n"
 }
 
@@ -342,7 +291,7 @@ run_uninstall() {
 # ---------------------------------------------------------------------------
 
 main() {
-    printf "\n  %sgecit installer%s\n" "$BOLD" "$NC"
+    printf "\n  %sgecit local installer%s\n" "$BOLD" "$NC"
     printf "  ----------------------------------------\n"
 
     if [ "$UNINSTALL" -eq 1 ]; then
@@ -350,7 +299,8 @@ main() {
         return
     fi
 
-    step 1 7 "Preflight"
+    step 1 6 "Preflight"
+    check_dir
     detect_os
     detect_arch
     detect_kernel
@@ -358,22 +308,19 @@ main() {
     require_tools
     ok "${OS}/${ARCH}, kernel $(uname -r), systemd present"
 
-    step 2 7 "Resolve version"
-    resolve_version
+    step 2 6 "Compile locally"
+    compile_binary
 
-    step 3 7 "Download and verify"
-    download_and_verify
-
-    step 4 7 "Back up existing install (if any)"
+    step 3 6 "Back up existing install (if any)"
     backup_existing
 
-    step 5 7 "Install binary"
+    step 4 6 "Install binary"
     install_binary
 
-    step 6 7 "Write systemd unit"
+    step 5 6 "Write systemd unit"
     write_unit
 
-    step 7 7 "Activate service"
+    step 6 6 "Activate service"
     activate_service
 
     print_install_summary
