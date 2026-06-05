@@ -7,27 +7,29 @@ DPI bypass tool. Injects fake TLS ClientHello packets to desynchronize Deep Pack
 **Linux**: eBPF sock_ops - hooks directly into the kernel TCP stack. No proxy, no traffic redirection.  
 **macOS/Windows**: TUN-based transparent proxy - intercepts all traffic at the IP layer via a virtual network interface.
 
-```
-sudo gecit run
+```bash
+doas gecit run
+
 ```
 
 > **Disclaimer**: This project is for educational and research purposes only. gecit demonstrates eBPF and network programming capabilities in the context of TLS protocol analysis. It does NOT hide your IP address, encrypt your traffic, or provide anonymity. Use is entirely at your own risk. Users are responsible for complying with all applicable laws in their jurisdiction.
 
 ## How it works
 
-```
+```text
 App connects to target:443
     ↓
 gecit intercepts the connection
   Linux:  eBPF sock_ops fires (inside kernel, before app sends data)
   macOS/Windows: TUN device captures packet, gVisor netstack terminates TCP
     ↓
-Fake ClientHello with SNI "www.google.com" sent with low TTL
+Fake ClientHello with SNI "[www.google.com](https://www.google.com)" sent with low TTL
     ↓
 Fake reaches DPI → DPI records "google.com" → allows connection
 Fake expires before server (low TTL) → server never sees it
     ↓
 Real ClientHello passes through → DPI already desynchronized
+
 ```
 
 Some ISPs inspect the TLS ClientHello SNI field to identify and block specific domains. gecit sends a fake ClientHello with a different SNI (`www.google.com`) and a low TTL before the real one. The DPI processes the fake and lets the connection through. The fake packet expires before reaching the server due to its low TTL.
@@ -36,17 +38,17 @@ Additionally, some ISPs poison DNS responses. gecit includes a built-in DoH (DNS
 
 ## Requirements
 
-| | Linux | macOS | Windows |
-|---|---|---|---|
+|  | Linux | macOS | Windows |
+| --- | --- | --- | --- |
 | **OS** | Kernel 5.10+ | macOS 12+ (Monterey) | Windows 10+ |
-| **Privileges** | root / sudo | root / sudo | Administrator |
+| **Privileges** | root / doas | root / doas | Administrator |
 | **Dependencies** | None | None | [Npcap](https://npcap.com) |
 
 ### Windows notes
 
-- **Npcap**: Download and install from [npcap.com](https://npcap.com/#download). Required for seq/ack extraction and fake packet injection.
-- **Windows Defender**: May flag gecit as `Win32/Wacapew.A!ml` (false positive). gecit creates a TUN interface, modifies DNS, and uses raw sockets - Defender flags this behavior. Add an exception: Windows Security → Virus & threat protection → Exclusions → Add gecit.exe.
-- **Run as Administrator**: Right-click PowerShell → "Run as Administrator", then run `.\gecit.exe run`.
+* **Npcap**: Download and install from [npcap.com](https://npcap.com/#download). Required for seq/ack extraction and fake packet injection.
+* **Windows Defender**: May flag gecit as `Win32/Wacapew.A!ml` (false positive). gecit creates a TUN interface, modifies DNS, and uses raw sockets - Defender flags this behavior. Add an exception: Windows Security → Virus & threat protection → Exclusions → Add gecit.exe.
+* **Run as Administrator**: Right-click PowerShell → "Run as Administrator", then run `.\gecit.exe run`.
 
 ## Installation
 
@@ -55,60 +57,65 @@ Additionally, some ISPs poison DNS responses. gecit includes a built-in DoH (DNS
 One line — detects arch, verifies SHA256, installs to `/usr/local/bin`, sets up a systemd service, enables and starts it:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/boratanrikulu/gecit/main/scripts/install.sh | sudo bash
+curl -fsSL [https://raw.githubusercontent.com/](https://raw.githubusercontent.com/)ycftbwc/gecit-unofficial/main/scripts/install.sh | doas bash
+
 ```
 
 Optional flags and env vars:
 
 ```bash
 # Pin a specific version
-curl -fsSL https://raw.githubusercontent.com/boratanrikulu/gecit/main/scripts/install.sh | sudo VERSION=v0.1.4 bash
+curl -fsSL [https://raw.githubusercontent.com/](https://raw.githubusercontent.com/)ycftbwc/gecit-unofficial/main/scripts/install.sh | doas VERSION=v0.1.4 bash
 
 # Install but don't start the service
-curl -fsSL https://raw.githubusercontent.com/boratanrikulu/gecit/main/scripts/install.sh | sudo bash -s -- --no-start
+curl -fsSL [https://raw.githubusercontent.com/](https://raw.githubusercontent.com/)ycftbwc/gecit-unofficial/main/scripts/install.sh | doas bash -s -- --no-start
 
 # Uninstall (stops + disables service, runs gecit cleanup, removes binary and unit file)
-curl -fsSL https://raw.githubusercontent.com/boratanrikulu/gecit/main/scripts/install.sh | sudo bash -s -- --uninstall
+curl -fsSL [https://raw.githubusercontent.com/](https://raw.githubusercontent.com/)ycftbwc/gecit-unofficial/main/scripts/install.sh | doas bash -s -- --uninstall
+
 ```
 
-The installer requires Linux kernel 5.10+, systemd, and `amd64` or `arm64`. After installation, customize CLI flags (e.g. `--fake-ttl`, `--doh-upstream`) with `sudo systemctl edit gecit`.
+The installer requires Linux kernel 5.10+, systemd, and `amd64` or `arm64`. After installation, customize CLI flags (e.g. `--fake-ttl`, `--doh-upstream`) with `doas systemctl edit gecit`.
 
 ### Pre-built binaries (manual)
 
-Download from [releases](https://github.com/boratanrikulu/gecit/releases):
+Download from [releases](https://github.com/ycftbwc/gecit-unofficial/releases):
 
 ```bash
 # Linux (amd64)
-curl -L https://github.com/boratanrikulu/gecit/releases/latest/download/gecit-linux-amd64 -o gecit
+curl -L [https://github.com/](https://github.com/)ycftbwc/gecit-unofficial/releases/latest/download/gecit-linux-amd64 -o gecit
 chmod +x gecit
-sudo ./gecit run
+doas ./gecit run
 
 # Linux (arm64)
-curl -L https://github.com/boratanrikulu/gecit/releases/latest/download/gecit-linux-arm64 -o gecit
+curl -L [https://github.com/](https://github.com/)ycftbwc/gecit-unofficial/releases/latest/download/gecit-linux-arm64 -o gecit
 chmod +x gecit
-sudo ./gecit run
+doas ./gecit run
 
 # macOS (Apple Silicon)
-curl -L https://github.com/boratanrikulu/gecit/releases/latest/download/gecit-darwin-arm64 -o gecit
+curl -L [https://github.com/](https://github.com/)ycftbwc/gecit-unofficial/releases/latest/download/gecit-darwin-arm64 -o gecit
 chmod +x gecit
-sudo ./gecit run
+doas ./gecit run
 
 # macOS (Intel)
-curl -L https://github.com/boratanrikulu/gecit/releases/latest/download/gecit-darwin-amd64 -o gecit
+curl -L [https://github.com/](https://github.com/)ycftbwc/gecit-unofficial/releases/latest/download/gecit-darwin-amd64 -o gecit
 chmod +x gecit
-sudo ./gecit run
+doas ./gecit run
 
 # Windows (amd64) - requires Npcap (npcap.com)
-curl -L https://github.com/boratanrikulu/gecit/releases/latest/download/gecit-windows-amd64.exe -o gecit.exe
+curl -L [https://github.com/](https://github.com/)ycftbwc/gecit-unofficial/releases/latest/download/gecit-windows-amd64.exe -o gecit.exe
 gecit.exe run
+
 ```
 
 ### Building from source
 
 Requires Go 1.24+. Linux builds need kernel 5.10+, clang, and llvm-strip for BPF compilation. Windows builds need [Npcap SDK](https://npcap.com/guide/npcap-devguide.html).
 
+*Note: The Linux Makefile targets are optimized with `-trimpath` and `-ldflags="-s -w"` to strip DWARF debugging tables and significantly reduce binary size.*
+
 ```bash
-git clone https://github.com/boratanrikulu/gecit.git
+git clone [https://github.com/](https://github.com/)ycftbwc/gecit-unofficial.git
 cd gecit
 
 make gecit-linux-amd64    # Linux x86_64
@@ -117,48 +124,50 @@ make gecit-darwin-arm64   # macOS Apple Silicon
 make gecit-darwin-amd64   # macOS Intel
 make gecit-windows-amd64  # Windows x86_64 (requires Npcap SDK)
 
-sudo ./bin/gecit-linux-arm64 run
+doas ./bin/gecit-linux-arm64 run
+
 ```
 
 gecit sets up everything automatically:
-- **DoH DNS server** on `127.0.0.1:53` (bypasses DNS poisoning)
-- **System DNS** pointed to the local DoH server
-- **Linux**: eBPF program attached to cgroup (fake injection + MSS fragmentation)
-- **macOS/Windows**: TUN virtual interface with automatic routing (all apps intercepted)
+
+* **DoH DNS server** on `127.0.0.1:53` (bypasses DNS poisoning)
+* **System DNS** pointed to the local DoH server
+* **Linux**: eBPF program attached to cgroup (fake injection + MSS fragmentation)
+* **macOS/Windows**: TUN virtual interface with automatic routing (all apps intercepted)
 
 Press `Ctrl+C` to stop - everything is restored (DNS, routes, BPF programs). Windows requires [Npcap](https://npcap.com) for full DPI bypass support.
 
-If gecit crashes, run `sudo gecit cleanup` to restore system settings.
+If gecit crashes, run `doas gecit cleanup` to restore system settings.
 
 ## Usage
 
 ```bash
 # Default (TTL=8, Cloudflare DoH)
-sudo gecit run
+doas gecit run
 
-# Use Google DoH
-sudo gecit run --doh-upstream google
+# Run in background with a low TTL and a privacy-respecting DoH provider
+doas gecit run --fake-ttl 3 --doh-upstream [https://dns.quad9.net/dns-query](https://dns.quad9.net/dns-query) --detach
+
+# Disable built-in DoH (useful if you already use DNS over HTTPS)
+doas gecit run --doh=false
 
 # Multiple upstreams (fallback order)
-sudo gecit run --doh-upstream cloudflare,quad9
-
-# Custom DoH URL
-sudo gecit run --doh-upstream https://8.8.8.8/dns-query
-
-# Custom TTL
-sudo gecit run --fake-ttl 12
+doas gecit run --doh-upstream cloudflare,quad9
 
 # Check system capabilities
-sudo gecit status
+doas gecit status
 
 # Restore system settings after a crash
-sudo gecit cleanup
+doas gecit cleanup
+
 ```
 
 ### CLI flags
 
 | Flag | Default | Description |
-|------|---------|-------------|
+| --- | --- | --- |
+| `-d, --detach` | `false` | Run in background (detach) |
+| `--doh` | `true` | Enable built-in DoH DNS resolver |
 | `--doh-upstream` | `cloudflare` | DoH upstream: preset name or URL. Comma-separated for fallback. |
 | `--fake-ttl` | `8` | TTL for fake packets (must reach DPI but expire before server) |
 | `--mss` | `40` | TCP MSS for ClientHello fragmentation (Linux) |
@@ -169,7 +178,7 @@ sudo gecit cleanup
 ### DoH presets
 
 | Preset | Upstream |
-|--------|----------|
+| --- | --- |
 | `cloudflare` | `https://1.1.1.1/dns-query` |
 | `google` | `https://8.8.8.8/dns-query` |
 | `quad9` | `https://9.9.9.9:5053/dns-query` |
@@ -182,14 +191,15 @@ The fake packet TTL must be high enough to reach the DPI (typically 2-4 hops) bu
 
 ```bash
 traceroute -n target.com
+
 ```
 
 The DPI is usually at the first few ISP hops. Default TTL=8 works for most networks.
 
 ## Platform differences
 
-| | Linux | macOS | Windows |
-|---|---|---|---|
+|  | Linux | macOS | Windows |
+| --- | --- | --- | --- |
 | **Engine** | eBPF sock_ops | TUN + gVisor netstack | TUN + gVisor netstack |
 | **Connection detection** | BPF perf events | TUN packet interception | TUN packet interception |
 | **Fake injection** | Raw socket | Raw socket | Raw socket via Npcap |
@@ -221,7 +231,7 @@ Most Windows DPI bypass tools use WinDivert, but its code signing certificate ex
 
 ### Linux (eBPF)
 
-```
+```text
 ┌──────────┐   ┌────────────────────┐   ┌────────────┐
 │ eBPF     │──>│ Perf Event Buffer  │──>│ Go         │
 │ sock_ops │   │ (conn details)     │   │ goroutine  │
@@ -236,11 +246,12 @@ Most Windows DPI bypass tools use WinDivert, but its code signing certificate ex
 │ Linux Kernel TCP Stack                             │
 │ (fragments ClientHello due to small MSS)           │
 └────────────────────────────────────────────────────┘
+
 ```
 
 ### macOS/Windows (TUN)
 
-```
+```text
 ┌──────────┐   ┌────────────────────┐   ┌────────────┐
 │ App      │──>│ TUN device         │──>│ gVisor     │
 │ connects │   │ (utun on macOS)    │   │ netstack   │
@@ -261,19 +272,20 @@ Most Windows DPI bypass tools use WinDivert, but its code signing certificate ex
                                         │    real    │
                                         │ 4. Pipe    │
                                         └────────────┘
+
 ```
 
 ## Roadmap
 
-- [x] Linux - eBPF sock_ops
-- [x] macOS - TUN transparent proxy
-- [x] DoH DNS resolver
-- [x] Windows - TUN transparent proxy
-- [ ] Auto-TTL detection (traceroute to find DPI hop count)
-- [ ] ECH (Encrypted Client Hello) support
+* [x] Linux - eBPF sock_ops
+* [x] macOS - TUN transparent proxy
+* [x] DoH DNS resolver
+* [x] Windows - TUN transparent proxy
+* [ ] Auto-TTL detection (traceroute to find DPI hop count)
+* [ ] ECH (Encrypted Client Hello) support
 
 ## License
 
 GPL-3.0. See [LICENSE](LICENSE).
 
-Copyright (c) 2026 Bora Tanrikulu \<me@bora.sh\>
+```
