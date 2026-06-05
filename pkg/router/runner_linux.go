@@ -78,7 +78,7 @@ func (r *nfqRunner) Stop() error {
 }
 
 func (r *nfqRunner) openRawSocket() error {
-	rs, err := rawsock.New()
+	rs, err := rawsock.New("")
 	if err != nil {
 		return err
 	}

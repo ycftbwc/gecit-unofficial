@@ -92,6 +92,11 @@ func handleEstablished(ctx *bpf.SockOpsMd, cfg *Config) bpf.SockOpsReturn {
 
 	var cookie uint64 = bpf.GetSocketCookie(unsafe.Pointer(ctx))
 	var state ConnState
+	state.BytesSent = 0
+	state.MssRestored = 0
+	state.Reserved[0] = 0
+	state.Reserved[1] = 0
+	state.Reserved[2] = 0
 	Connections.Update(&cookie, &state)
 
 	var flags uint32 = ctx.BpfSockOpsCbFlags | bpf.BpfSockOpsWriteHdrOptCbFlag

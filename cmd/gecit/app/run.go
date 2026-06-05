@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"os"
+	"os/exec"
 	"os/signal"
 	"syscall"
 
@@ -19,6 +20,7 @@ var runCmd = &cobra.Command{
 }
 
 func init() {
+	runCmd.Flags().BoolP("detach", "d", false, "run in background (detach)")
 	runCmd.Flags().Int("fake-ttl", 8, "TTL for fake packets (reaches DPI, not server)")
 	runCmd.Flags().Bool("doh", true, "enable built-in DoH DNS resolver")
 	runCmd.Flags().String("doh-upstream", "cloudflare", "DoH upstream: preset (cloudflare,google,quad9,nextdns,adguard) or URL")
@@ -28,6 +30,7 @@ func init() {
 	runCmd.Flags().String("cgroup", "/sys/fs/cgroup", "cgroup v2 path (Linux only)")
 	runCmd.Flags().BoolP("verbose", "v", false, "enable debug logging")
 
+	viper.BindPFlag("detach", runCmd.Flags().Lookup("detach"))
 	viper.BindPFlag("verbose", runCmd.Flags().Lookup("verbose"))
 	viper.BindPFlag("fake_ttl", runCmd.Flags().Lookup("fake-ttl"))
 	viper.BindPFlag("doh_enabled", runCmd.Flags().Lookup("doh"))
@@ -41,6 +44,24 @@ func init() {
 }
 
 func runEngine(cmd *cobra.Command, args []string) error {
+
+	if viper.GetBool("detach") {
+			var childArgs []string
+			for _, arg := range os.Args[1:] {
+				if arg != "--detach" && arg != "-d" {
+					childArgs = append(childArgs, arg)
+				}
+			}
+			
+			child := exec.Command(os.Args[0], childArgs...)
+			if err := child.Start(); err != nil {
+				return err
+			}
+			
+			logrus.Infof("gecit detached. running in background with PID %d", child.Process.Pid)
+			os.Exit(0)
+		}
+	
 	if err := checkPrivileges(); err != nil {
 		return err
 	}
