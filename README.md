@@ -8,8 +8,7 @@ DPI bypass tool. Injects fake TLS ClientHello packets to desynchronize Deep Pack
 **macOS/Windows**: TUN-based transparent proxy - intercepts all traffic at the IP layer via a virtual network interface.
 
 ```bash
-doas gecit run
-
+sudo gecit run
 ```
 
 > **Disclaimer**: This project is for educational and research purposes only. gecit demonstrates eBPF and network programming capabilities in the context of TLS protocol analysis. It does NOT hide your IP address, encrypt your traffic, or provide anonymity. Use is entirely at your own risk. Users are responsible for complying with all applicable laws in their jurisdiction.
@@ -29,7 +28,6 @@ Fake reaches DPI → DPI records "google.com" → allows connection
 Fake expires before server (low TTL) → server never sees it
     ↓
 Real ClientHello passes through → DPI already desynchronized
-
 ```
 
 Some ISPs inspect the TLS ClientHello SNI field to identify and block specific domains. gecit sends a fake ClientHello with a different SNI (`www.google.com`) and a low TTL before the real one. The DPI processes the fake and lets the connection through. The fake packet expires before reaching the server due to its low TTL.
@@ -38,10 +36,10 @@ Additionally, some ISPs poison DNS responses. gecit includes a built-in DoH (DNS
 
 ## Requirements
 
-|  | Linux | macOS | Windows |
+| | Linux | macOS | Windows |
 | --- | --- | --- | --- |
 | **OS** | Kernel 5.10+ | macOS 12+ (Monterey) | Windows 10+ |
-| **Privileges** | root / doas | root / doas | Administrator |
+| **Privileges** | root / sudo | root / sudo | Administrator |
 | **Dependencies** | None | None | [Npcap](https://npcap.com) |
 
 ### Windows notes
@@ -57,25 +55,23 @@ Additionally, some ISPs poison DNS responses. gecit includes a built-in DoH (DNS
 One line — detects arch, verifies SHA256, installs to `/usr/local/bin`, sets up a systemd service, enables and starts it:
 
 ```bash
-curl -fsSL [https://raw.githubusercontent.com/](https://raw.githubusercontent.com/)ycftbwc/gecit-unofficial/main/scripts/install.sh | doas bash
-
+curl -fsSL [https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh](https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh) | sudo bash
 ```
 
 Optional flags and env vars:
 
 ```bash
 # Pin a specific version
-curl -fsSL [https://raw.githubusercontent.com/](https://raw.githubusercontent.com/)ycftbwc/gecit-unofficial/main/scripts/install.sh | doas VERSION=v0.1.4 bash
+curl -fsSL [https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh](https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh) | sudo VERSION=v0.1.4 bash
 
 # Install but don't start the service
-curl -fsSL [https://raw.githubusercontent.com/](https://raw.githubusercontent.com/)ycftbwc/gecit-unofficial/main/scripts/install.sh | doas bash -s -- --no-start
+curl -fsSL [https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh](https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh) | sudo bash -s -- --no-start
 
 # Uninstall (stops + disables service, runs gecit cleanup, removes binary and unit file)
-curl -fsSL [https://raw.githubusercontent.com/](https://raw.githubusercontent.com/)ycftbwc/gecit-unofficial/main/scripts/install.sh | doas bash -s -- --uninstall
-
+curl -fsSL [https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh](https://raw.githubusercontent.com/ycftbwc/gecit-unofficial/main/scripts/install.sh) | sudo bash -s -- --uninstall
 ```
 
-The installer requires Linux kernel 5.10+, systemd, and `amd64` or `arm64`. After installation, customize CLI flags (e.g. `--fake-ttl`, `--doh-upstream`) with `doas systemctl edit gecit`.
+The installer requires Linux kernel 5.10+, systemd, and `amd64` or `arm64`. After installation, customize CLI flags (e.g. `--fake-ttl`, `--doh-upstream`) with `sudo systemctl edit gecit`.
 
 ### Pre-built binaries (manual)
 
@@ -83,29 +79,28 @@ Download from [releases](https://github.com/ycftbwc/gecit-unofficial/releases):
 
 ```bash
 # Linux (amd64)
-curl -L [https://github.com/](https://github.com/)ycftbwc/gecit-unofficial/releases/latest/download/gecit-linux-amd64 -o gecit
+curl -L [https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-linux-amd64](https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-linux-amd64) -o gecit
 chmod +x gecit
-doas ./gecit run
+sudo ./gecit run
 
 # Linux (arm64)
-curl -L [https://github.com/](https://github.com/)ycftbwc/gecit-unofficial/releases/latest/download/gecit-linux-arm64 -o gecit
+curl -L [https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-linux-arm64](https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-linux-arm64) -o gecit
 chmod +x gecit
-doas ./gecit run
+sudo ./gecit run
 
 # macOS (Apple Silicon)
-curl -L [https://github.com/](https://github.com/)ycftbwc/gecit-unofficial/releases/latest/download/gecit-darwin-arm64 -o gecit
+curl -L [https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-darwin-arm64](https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-darwin-arm64) -o gecit
 chmod +x gecit
-doas ./gecit run
+sudo ./gecit run
 
 # macOS (Intel)
-curl -L [https://github.com/](https://github.com/)ycftbwc/gecit-unofficial/releases/latest/download/gecit-darwin-amd64 -o gecit
+curl -L [https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-darwin-amd64](https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-darwin-amd64) -o gecit
 chmod +x gecit
-doas ./gecit run
+sudo ./gecit run
 
 # Windows (amd64) - requires Npcap (npcap.com)
-curl -L [https://github.com/](https://github.com/)ycftbwc/gecit-unofficial/releases/latest/download/gecit-windows-amd64.exe -o gecit.exe
+curl -L [https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-windows-amd64.exe](https://github.com/ycftbwc/gecit-unofficial/releases/latest/download/gecit-windows-amd64.exe) -o gecit.exe
 gecit.exe run
-
 ```
 
 ### Building from source
@@ -115,7 +110,7 @@ Requires Go 1.24+. Linux builds need kernel 5.10+, clang, and llvm-strip for BPF
 *Note: The Linux Makefile targets are optimized with `-trimpath` and `-ldflags="-s -w"` to strip DWARF debugging tables and significantly reduce binary size.*
 
 ```bash
-git clone [https://github.com/](https://github.com/)ycftbwc/gecit-unofficial.git
+git clone [https://github.com/ycftbwc/gecit-unofficial.git](https://github.com/ycftbwc/gecit-unofficial.git)
 cd gecit
 
 make gecit-linux-amd64    # Linux x86_64
@@ -124,8 +119,7 @@ make gecit-darwin-arm64   # macOS Apple Silicon
 make gecit-darwin-amd64   # macOS Intel
 make gecit-windows-amd64  # Windows x86_64 (requires Npcap SDK)
 
-doas ./bin/gecit-linux-arm64 run
-
+sudo ./bin/gecit-linux-arm64 run
 ```
 
 gecit sets up everything automatically:
@@ -137,29 +131,28 @@ gecit sets up everything automatically:
 
 Press `Ctrl+C` to stop - everything is restored (DNS, routes, BPF programs). Windows requires [Npcap](https://npcap.com) for full DPI bypass support.
 
-If gecit crashes, run `doas gecit cleanup` to restore system settings.
+If gecit crashes, run `sudo gecit cleanup` to restore system settings.
 
 ## Usage
 
 ```bash
 # Default (TTL=8, Cloudflare DoH)
-doas gecit run
+sudo gecit run
 
 # Run in background with a low TTL and a privacy-respecting DoH provider
-doas gecit run --fake-ttl 3 --doh-upstream [https://dns.quad9.net/dns-query](https://dns.quad9.net/dns-query) --detach
+sudo gecit run --fake-ttl 3 --doh-upstream [https://dns.quad9.net/dns-query](https://dns.quad9.net/dns-query) --detach
 
 # Disable built-in DoH (useful if you already use DNS over HTTPS)
-doas gecit run --doh=false
+sudo gecit run --doh=false
 
 # Multiple upstreams (fallback order)
-doas gecit run --doh-upstream cloudflare,quad9
+sudo gecit run --doh-upstream cloudflare,quad9
 
 # Check system capabilities
-doas gecit status
+sudo gecit status
 
 # Restore system settings after a crash
-doas gecit cleanup
-
+sudo gecit cleanup
 ```
 
 ### CLI flags
@@ -191,7 +184,6 @@ The fake packet TTL must be high enough to reach the DPI (typically 2-4 hops) bu
 
 ```bash
 traceroute -n target.com
-
 ```
 
 The DPI is usually at the first few ISP hops. Default TTL=8 works for most networks.
@@ -246,7 +238,6 @@ Most Windows DPI bypass tools use WinDivert, but its code signing certificate ex
 │ Linux Kernel TCP Stack                             │
 │ (fragments ClientHello due to small MSS)           │
 └────────────────────────────────────────────────────┘
-
 ```
 
 ### macOS/Windows (TUN)
@@ -272,7 +263,6 @@ Most Windows DPI bypass tools use WinDivert, but its code signing certificate ex
                                         │    real    │
                                         │ 4. Pipe    │
                                         └────────────┘
-
 ```
 
 ## Roadmap
@@ -287,5 +277,3 @@ Most Windows DPI bypass tools use WinDivert, but its code signing certificate ex
 ## License
 
 GPL-3.0. See [LICENSE](LICENSE).
-
-```
